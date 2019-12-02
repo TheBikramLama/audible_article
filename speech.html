@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+
+<textarea name="speech_text" id="speech_text" cols="30" rows="10"></textarea>
+<br>
+<button type="button" id="play">Play</button>
+
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+$(function() {
+	var synth_app = {
+		synth : window.speechSynthesis,
+		split_count: 20,
+		sentence_arr: [],
+		voices: '',
+		narrator: 5,
+		init() {
+			synth_app.binders();
+		},
+		binders() {
+			$('#play').on('click', function() {
+				synth_app.cancel();
+				synth_app.sentence_arr = [];
+				synth_app.voices = synth_app.synth.getVoices();
+				synth_app.process();
+			})
+		},
+		process() {
+			var paragraph = $('#speech_text').val();
+			var sentences = synth_app.splitSentence(paragraph);
+
+			for (var i = 0; i < sentences.length; i++)
+			{
+				// Ignore Punctuations
+				if ( synth_app.checkPunctuation(sentences[i]) ) continue;
+
+				// Check if the sentence is long
+				if ( synth_app.checkLong(sentences[i]) ) {
+					synth_app.smallerSentence(sentences[i]);
+					continue;
+				}
+
+				// All good
+				synth_app.sentence_arr.push(sentences[i]);
+			}
+
+			synth_app.play();
+		},
+		play() {
+			synth_app.sentence_arr.map( function( sentence ) {
+				var utterThis = new SpeechSynthesisUtterance(sentence);
+				utterThis.voice = synth_app.voices[synth_app.narrator];
+				synth_app.synth.speak(utterThis);
+			});
+		},
+		pause() {
+
+		},
+		cancel() {
+			synth_app.synth.cancel();
+		},
+		splitSentence( paragraph ) {
+			return paragraph.split(/([\?!.]) /);
+		},
+		checkPunctuation( sentence ) {
+			return ( sentence.length == 1 && sentence.match(/([\?!.])/) );
+		},
+		checkLong( sentence ) {
+			return ( sentence.split(' ').length > synth_app.split_count );
+		},
+		smallerSentence( sentence ) {
+			sentences = sentence.split(' ');
+			split_count = synth_app.split_count;
+			for (var i = 0; i <= (sentences.length / split_count); i++) {
+				small_sentence = sentences.slice( i*split_count, i*split_count+split_count );
+				if ( small_sentence != '' ) synth_app.sentence_arr.push(small_sentence.join(' '));
+			}
+		}
+	}
+	synth_app.init();
+	return false;
+});
+</script>
+</body>
+</html>
